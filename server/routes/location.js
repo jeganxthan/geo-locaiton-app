@@ -4,23 +4,28 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// Save location
-router.post("/emergency", auth(["user"]), async (req, res) => {
+// Save location (continuous tracking)
+router.post("/location", auth(["user"]), async (req, res) => {
   const { latitude, longitude } = req.body;
 
-  const emergency = new Emergency({
+  const location = new Emergency({
     userId: req.user._id,
     latitude,
     longitude,
   });
 
-  await emergency.save();
+  await location.save();
 
   req.app.get("io").emit("user-location", { latitude, longitude });
-  res.json({ success: true, data: emergency });
+  res.json({ success: true, data: location });
 });
 
-// Get routes for a specific date
+// Trigger emergency alert
+router.post("/emergency", auth(["user"]), async (req, res) => {
+  req.app.get("io").emit("emergency-alert", { message: "Emergency!" });
+  res.json({ success: true });
+});
+
 router.get("/by-date", auth(["admin"]), async (req, res) => {
   const { date } = req.query; // format: YYYY-MM-DD
   if (!date) return res.status(400).json({ error: "Date is required" });
